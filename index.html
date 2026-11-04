@@ -23,14 +23,21 @@
     font-family:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
     letter-spacing:-.011em; -webkit-font-smoothing:antialiased;
     background:
-      radial-gradient(900px 480px at 50% -120px, rgba(34,211,238,.14), transparent 60%),
-      radial-gradient(700px 500px at 85% 110%, rgba(46,230,168,.07), transparent 60%),
-      var(--bg);}
+      radial-gradient(900px 480px at 50% -120px, rgba(34,211,238,.16), transparent 60%),
+      radial-gradient(700px 500px at 85% 110%, rgba(46,230,168,.08), transparent 60%),
+      linear-gradient(rgba(255,255,255,.028) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.028) 1px, transparent 1px),
+      var(--bg);
+    background-size:auto, auto, 44px 44px, 44px 44px, auto;}
   ::selection{background:var(--accent); color:#03151B}
-  header{padding:22px 16px 14px; text-align:center; border-bottom:2px solid var(--line);
-    background:linear-gradient(180deg,rgba(38,44,77,.65),rgba(5,6,13,0))}
-  header .co{font-family:"Sora",sans-serif; font-size:15px; letter-spacing:.22em;
-    text-transform:uppercase; color:var(--accent); font-weight:700}
+  header{padding:26px 16px 20px; text-align:center; border-bottom:1px solid rgba(154,166,204,.35);
+    background:linear-gradient(180deg,rgba(38,44,77,.7),rgba(5,6,13,0));
+    box-shadow:0 18px 40px -28px rgba(34,211,238,.35)}
+  header .co{font-family:"Sora",sans-serif; font-size:16px; letter-spacing:.3em;
+    text-transform:uppercase; color:var(--accent); font-weight:700;
+    display:inline-block; padding:9px 20px 9px 23px; border:1px solid rgba(34,211,238,.4);
+    border-radius:999px; background:rgba(34,211,238,.07);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.08), 0 0 24px rgba(34,211,238,.12)}
   header .app{font-family:"Sora",sans-serif; font-size:34px; font-weight:800; letter-spacing:-.02em; margin-top:2px}
   main{max-width:880px; margin:0 auto; padding:18px 16px 26px}
   main:not(.hidden){animation:rise-in .42s cubic-bezier(.22,1,.36,1) both}
@@ -43,11 +50,11 @@
   button{font-family:inherit; cursor:pointer; border:none; border-radius:18px; color:var(--text);
     transition:transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease, filter .2s ease, background-color .2s ease, border-color .2s ease}
   button:active{transform:scale(.97)}
-  .name-btn{background:var(--panel2); border:2px solid var(--line-strong); padding:24px 10px;
+  .name-btn{background:linear-gradient(180deg,#2B3464,#212A50); border:2px solid var(--line-strong); padding:24px 10px;
     font-family:"Sora",sans-serif; font-size:28px; font-weight:700; min-height:108px;
     display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
     box-shadow:var(--shadow-card)}
-  .name-btn:hover{filter:brightness(1.08); box-shadow:var(--shadow-glow)}
+  .name-btn:hover{filter:brightness(1.09); transform:translateY(-2px); box-shadow:var(--shadow-pop, 0 24px 54px -16px rgba(0,0,0,.8)), var(--shadow-glow)}
   .name-btn .st{font-family:"Manrope",sans-serif; font-size:13px; font-weight:800; letter-spacing:.05em;
     display:inline-flex; align-items:center; gap:7px}
   .st.on{color:var(--green)} .st.off{color:var(--dim2)}
@@ -56,13 +63,13 @@
   .st.off::before{content:""; width:9px; height:9px; border-radius:50%; background:var(--line)}
   .big-btn{width:100%; padding:22px; font-family:"Sora",sans-serif; font-size:30px; font-weight:800;
     min-height:92px; border-radius:18px; letter-spacing:-.01em}
-  .btn-in{background:linear-gradient(180deg,var(--green),var(--green-dark)); color:#04150B; box-shadow:var(--shadow-green)}
-  .btn-out{background:linear-gradient(180deg,#FF7285,var(--danger)); color:#2B050B;
-    box-shadow:0 0 22px rgba(255,90,110,.22), 0 12px 30px -10px rgba(255,90,110,.4)}
-  .btn-break{background:linear-gradient(180deg,#FFC44D,var(--amber)); color:#241300;
-    box-shadow:0 0 22px rgba(255,176,32,.22), 0 12px 30px -10px rgba(255,176,32,.38)}
+  .btn-in{background:linear-gradient(180deg,#4BF0B8,var(--green-dark)); color:#04150B; box-shadow:inset 0 1px 0 rgba(255,255,255,.45), var(--shadow-green)}
+  .btn-out{background:linear-gradient(180deg,#FF8296,#F43F57); color:#2B050B;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.4), 0 0 22px rgba(255,90,110,.22), 0 12px 30px -10px rgba(255,90,110,.4)}
+  .btn-break{background:linear-gradient(180deg,#FFD071,#F59E0B); color:#241300;
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.45), 0 0 22px rgba(255,176,32,.22), 0 12px 30px -10px rgba(255,176,32,.38)}
   .btn-ghost{background:var(--panel2); border:2px solid var(--line-strong); font-size:18px; font-weight:700; padding:14px; min-height:60px}
-  .timer{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace; font-size:84px; font-weight:800;
+  .timer{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace; font-size:88px; font-weight:800;
     text-align:center; font-variant-numeric:tabular-nums; letter-spacing:-.02em; margin:12px 0 2px;
     text-shadow:0 0 34px rgba(34,211,238,.25)}
   .who{font-family:"Sora",sans-serif; font-size:34px; font-weight:800; letter-spacing:-.02em; text-align:center}
@@ -70,21 +77,21 @@
   .stack{display:flex; flex-direction:column; gap:14px}
   .job-btn{background:var(--panel2); border:2px solid var(--line-strong); padding:18px 16px; text-align:left;
     font-size:19px; font-weight:700; min-height:76px; width:100%; border-radius:18px; box-shadow:var(--shadow-card)}
-  .job-btn:hover{filter:brightness(1.08)}
+  .job-btn:hover{filter:brightness(1.09); transform:translateY(-1px)}
   .job-btn .code{font-family:"JetBrains Mono",monospace; color:var(--accent); font-weight:800}
   footer{padding:22px; text-align:center}
   footer a{color:var(--dim2); font-size:15px; font-weight:700}
   .hidden{display:none !important}
   /* manager */
   .tabs{display:flex; flex-wrap:wrap; gap:9px; margin-bottom:16px}
-  .tab{background:var(--panel2); border:2px solid var(--line); padding:12px 16px; font-size:16px; font-weight:700; border-radius:12px}
+  .tab{background:var(--panel2); border:2px solid var(--line); padding:12px 18px; font-size:16px; font-weight:700; border-radius:999px}
   .tab.active{border-color:var(--accent); color:#fff; background:rgba(34,211,238,.16); box-shadow:var(--shadow-glow)}
-  .card{background:var(--panel); border:2px solid var(--line-strong); border-radius:22px;
+  .card{background:linear-gradient(180deg,#1E2444,var(--panel)); border:2px solid var(--line-strong); border-radius:22px;
     padding:16px 18px; margin-bottom:14px; box-shadow:var(--shadow-card)}
   .card h3{font-family:"Sora",sans-serif; margin:0 0 10px; font-size:20px; font-weight:700; letter-spacing:-.015em}
   .kpi{display:flex; gap:14px; flex-wrap:wrap}
   .kpi .card{flex:1; min-width:150px; text-align:center}
-  .kpi .num{font-family:"JetBrains Mono",monospace; font-size:40px; font-weight:800; color:var(--accent)}
+  .kpi .num{font-family:"JetBrains Mono",monospace; font-size:40px; font-weight:800; color:var(--accent); text-shadow:0 0 22px rgba(34,211,238,.35)}
   .kpi .lbl{color:var(--muted); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.09em}
   table{width:100%; border-collapse:collapse; font-size:16px}
   th,td{text-align:left; padding:8px; border-bottom:1px solid #2A3358; vertical-align:top}
@@ -97,9 +104,10 @@
     font-size:17px; line-height:1.55; white-space:pre-wrap}
   .row{display:flex; gap:9px; align-items:center; flex-wrap:wrap}
   .nav-btn{background:var(--panel2); border:2px solid var(--line-strong); padding:10px 16px; font-size:16px; font-weight:700; border-radius:12px}
-  input[type=text],input[type=password]{background:var(--panel2); border:2px solid var(--line-strong); color:var(--text);
-    border-radius:14px; padding:15px; font-size:19px; width:100%; font-family:inherit}
+  input[type=text],input[type=password],input[type=date],input[type=time],input[type=number],select{background:var(--panel2); border:2px solid var(--line-strong); color:var(--text);
+    border-radius:16px; padding:15px; font-size:19px; width:100%; font-family:inherit; background:#1E2547}
   input:focus{box-shadow:0 0 0 4px rgba(34,211,238,.18), 0 0 18px rgba(34,211,238,.12); outline:none}
+  .flabel{font-size:14px; font-weight:800; letter-spacing:.06em; text-transform:uppercase; color:var(--dim2); margin:2px 0 -6px}
   .err{color:var(--danger); font-weight:700; min-height:22px; text-align:center}
   .muted{color:var(--muted)} .right{margin-left:auto}
   .elapsed{font-family:"JetBrains Mono",monospace; font-variant-numeric:tabular-nums; font-weight:700}
@@ -125,6 +133,7 @@
   <div class="stack">
     <button class="big-btn btn-in" id="btnClockIn">Clock In</button>
     <button class="btn-ghost" id="ciBack">← Back</button>
+    <button class="btn-ghost" id="ciManual">Forgot to clock in? Enter time by hand</button>
   </div>
 </main>
 
@@ -147,6 +156,28 @@
   <div class="stack" id="jobList"></div>
   <div class="stack" style="margin-top:12px">
     <button class="btn-ghost" id="jpBack">← Back</button>
+  </div>
+</main>
+
+
+<!-- ============ EMPLOYEE: manual time entry ============ -->
+<main id="view-manual" class="hidden">
+  <div class="who" id="mnName"></div>
+  <p class="sub">Type in the time you worked. It goes on your timesheet marked "By hand".</p>
+  <div class="stack">
+    <div class="flabel">Day</div>
+    <input type="date" id="mnDate">
+    <div class="flabel">Job</div>
+    <select id="mnJob"></select>
+    <div class="flabel">Clock in</div>
+    <input type="time" id="mnIn">
+    <div class="flabel">Clock out</div>
+    <input type="time" id="mnOut">
+    <div class="flabel">Break minutes taken (0 if none)</div>
+    <input type="number" id="mnBreak" min="0" step="1" value="0">
+    <div class="err" id="mnErr"></div>
+    <button class="big-btn btn-in" id="mnSave">Save this time</button>
+    <button class="btn-ghost" id="mnBack">← Back</button>
   </div>
 </main>
 
@@ -194,7 +225,7 @@ const api = async (path, opts = {}) => {
 const mgrHeaders = () => ({ 'X-Manager-Token': sessionStorage.getItem('mgrToken') || '' });
 const mapi = (path, opts = {}) => api(path, { ...opts, headers: { ...(opts.headers || {}), ...mgrHeaders() } });
 
-const views = ['view-picker', 'view-clockin', 'view-shift', 'view-jobpick', 'view-mgrlogin', 'view-manager'];
+const views = ['view-picker', 'view-clockin', 'view-shift', 'view-jobpick', 'view-manual', 'view-mgrlogin', 'view-manager'];
 function show(id) { views.forEach(v => $(v).classList.toggle('hidden', v !== id)); }
 
 let workers = [], jobs = [], currentWorker = null, shiftState = null;
@@ -241,6 +272,37 @@ $('btnClockIn').onclick = async () => {
   await api('/api/clock-in', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id }) });
   currentWorker = null;
   loadPicker();
+};
+
+/* ---------- employee: manual time entry ---------- */
+function chicagoToday() {
+  const parts = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', year: 'numeric', month: '2-digit', day: '2-digit' }).formatToParts(new Date());
+  const o = {}; for (const p of parts) o[p.type] = p.value;
+  return `${o.year}-${o.month}-${o.day}`;
+}
+$('ciManual').onclick = () => {
+  $('mnName').textContent = currentWorker.name;
+  const sel = $('mnJob'); sel.innerHTML = '';
+  for (const j of jobs) {
+    const op = document.createElement('option');
+    op.value = j.code; op.textContent = j.code + ' — ' + j.label;
+    sel.appendChild(op);
+  }
+  $('mnDate').value = chicagoToday();
+  $('mnIn').value = ''; $('mnOut').value = ''; $('mnBreak').value = '0'; $('mnErr').textContent = '';
+  show('view-manual');
+};
+$('mnBack').onclick = () => { $('ciName').textContent = currentWorker.name; show('view-clockin'); };
+$('mnSave').onclick = async () => {
+  try {
+    await api('/api/manual-entry', { method: 'POST', body: JSON.stringify({
+      workerId: currentWorker.id, jobId: $('mnJob').value,
+      date: $('mnDate').value, inTime: $('mnIn').value, outTime: $('mnOut').value,
+      breakMinutes: $('mnBreak').value,
+    }) });
+    currentWorker = null;
+    loadPicker();
+  } catch (e) { $('mnErr').textContent = e.message; }
 };
 
 /* ---------- employee: shift screen ---------- */
@@ -384,7 +446,7 @@ async function loadTimesheets() {
     for (const day of w.days) {
       h += `<p style="margin:10px 0 4px"><strong>${day.date}</strong> — ${day.totalHrs} hrs</p><table>`;
       for (const s of day.sessions) {
-        h += `<tr><td>${s.jobCode || '—'} ${s.jobLabel}</td><td>${s.inTime} – ${s.outTime || '<span class="pill open">Still clocked in</span>'}</td><td>${s.netHrs} hrs</td></tr>`;
+        h += `<tr><td>${s.jobCode || '—'} ${s.jobLabel}${s.manual ? ' <span class="pill brk">By hand</span>' : ''}</td><td>${s.inTime} – ${s.outTime || '<span class="pill open">Still clocked in</span>'}</td><td>${s.netHrs} hrs</td></tr>`;
       }
       h += `</table>`;
     }

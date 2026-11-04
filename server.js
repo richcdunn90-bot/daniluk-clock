@@ -120,6 +120,14 @@ const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: TZ, hour: 'numeric'
 function prettyTime(iso) { return timeFmt.format(new Date(iso)); }
 function fmtHrs(ms) { return (ms / 3600000).toFixed(1); }
 
+
+/* UTC instant for a Chicago local date (YYYY-MM-DD) + time (HH:MM). */
+function chicagoLocalToUtc(dateStr, timeStr) {
+  const { y, m, d } = parseDateStr(dateStr);
+  const [hh, mm] = timeStr.split(':').map(Number);
+  return dayStartUtc(y, m, d) + hh * 3600000 + mm * 60000;
+}
+
 /* ---------------- Session math ---------------- */
 function openSession(workerId) {
   return DB.sessions.find(s => s.workerId === workerId && !s.clockOut) || null;
@@ -332,6 +340,49 @@ const server = http.createServer(async (req, res) => {
       return;
     }
 
+
+    if (p === '/api/manual-entry' && req.method === 'POST') {
+      const { workerId, jobId, date, inTime, outTime, breakMinutes } = await readBody(req);
+      const w = DB.workers.find(w => w.id === workerId);
+      if (!w) { sendJson(res, 400, { error: 'Unknown worker' }); return; }
+      if (!jobId || !DB.jobs.some(j => j.code === jobId)) {
+        sendJson(res, 400, { error: 'Pick the job you worked' });
+        return;
+      }
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || '')) ||
+          !/^\d{2}:\d{2}$/.test(String(inTime || '')) ||
+          !/^\d{2}:\d{2}$/.test(String(outTime || ''))) {
+        sendJson(res, 400, { error: 'Enter the date, clock-in time and clock-out time' });
+        return;
+      }
+      const inMs = chicagoLocalToUtc(date, inTime);
+      const outMs = chicagoLocalToUtc(date, outTime);
+      if (!(outMs > inMs)) { sendJson(res, 400, { error: 'Clock-out has to be after clock-in' }); return; }
+      if (outMs - inMs > 24 * 3600000) { sendJson(res, 400, { error: 'That shift is over 24 hours - check the times' }); return; }
+      if (outMs > Date.now() + 60000) { sendJson(res, 400, { error: "That time hasn't happened yet" }); return; }
+      const brkMin = Math.max(0, Math.floor(Number(breakMinutes) || 0));
+      if (brkMin * 60000 >= outMs - inMs) { sendJson(res, 400, { error: 'Break is longer than the shift itself' }); return; }
+      for (const o of DB.sessions.filter(x => x.workerId === workerId)) {
+        const oIn = Date.parse(o.clockIn);
+        const oOut = o.clockOut ? Date.parse(o.clockOut) : Infinity;
+        if (inMs < oOut && outMs > oIn) {
+          sendJson(res, 400, { error: 'That overlaps time already on the clock for you' });
+          return;
+        }
+      }
+      const inIso = new Date(inMs).toISOString();
+      const sess = {
+        id: DB.nextSessionId++, workerId, jobId,
+        clockIn: inIso, clockOut: new Date(outMs).toISOString(),
+        breaks: brkMin > 0 ? [{ start: inIso, end: new Date(inMs + brkMin * 60000).toISOString() }] : [],
+        manual: true,
+      };
+      DB.sessions.push(sess);
+      saveDb();
+      sendJson(res, 200, { ok: true });
+      return;
+    }
+
     /* ---------- Manager auth ---------- */
     if (p === '/api/manager/status' && req.method === 'GET') {
       sendJson(res, 200, { hasPin: !!DB.pin });
@@ -424,7 +475,7 @@ const server = http.createServer(async (req, res) => {
             days.get(ds).sessions.push({
               jobCode: s.jobId, jobLabel: s.jobId ? jobLabel(s.jobId) : 'Job not picked yet',
               inTime: prettyTime(s.clockIn), outTime: s.clockOut ? prettyTime(s.clockOut) : null,
-              open: !s.clockOut, netHrs: fmtHrs(net),
+              open: !s.clockOut, manual: !!s.manual, netHrs: fmtHrs(net),
             });
             days.get(ds).totalMs += net;
           }
