@@ -5,69 +5,105 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Digital Job Clock — The Daniluk Corporation</title>
 <style>
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@500;600;700;800&family=Manrope:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@500;600;700;800&display=swap');
   :root{
-    --bg:#0b0e14; --panel:#151a26; --panel2:#1c2334; --line:#2b3550;
-    --text:#f2f5ff; --muted:#9fb0d0; --accent:#35d07f; --accent2:#ffb020;
-    --danger:#ff5a5a; --blue:#4da3ff;
+    --bg:#05060D; --panel:#1B2038; --panel2:#262C4D; --panel3:#333B66;
+    --line:#6B78A8; --line-strong:#9AA6CC;
+    --text:#FFFFFF; --muted:#E8EDF8; --dim2:#D3DBEF;
+    --accent:#22D3EE; --accent-soft:rgba(34,211,238,.28);
+    --green:#2EE6A8; --green-dark:#0FBF8A; --green-soft:rgba(46,230,168,.28);
+    --amber:#FFB020; --amber-soft:rgba(255,176,32,.28);
+    --danger:#FF5A6E; --red-soft:rgba(255,90,110,.28);
+    --shadow-card: inset 0 1px 0 rgba(255,255,255,.06), 0 1px 2px rgba(0,0,0,.4), 0 20px 44px -20px rgba(0,0,0,.75);
+    --shadow-green: 0 0 22px rgba(46,230,168,.25), 0 12px 30px -10px rgba(46,230,168,.4);
+    --shadow-glow: 0 0 24px rgba(34,211,238,.28), 0 10px 30px -10px rgba(34,211,238,.35);
   }
   *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
-  body{margin:0; background:var(--bg); color:var(--text);
-    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
-  header{padding:18px 16px 10px; text-align:center; border-bottom:1px solid var(--line);
-    background:linear-gradient(180deg,#121828,#0b0e14)}
-  header .co{font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700}
-  header .app{font-size:30px; font-weight:800; letter-spacing:.02em}
-  main{max-width:860px; margin:0 auto; padding:16px}
-  h2.q{font-size:24px; font-weight:800; margin:8px 0 14px; text-align:center}
-  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px}
-  button{font-family:inherit; cursor:pointer; border:none; border-radius:14px; color:var(--text)}
-  .name-btn{background:var(--panel2); border:2px solid var(--line); padding:22px 10px;
-    font-size:26px; font-weight:800; min-height:92px; display:flex; flex-direction:column;
-    align-items:center; justify-content:center; gap:4px}
-  .name-btn:active{transform:scale(.98)}
-  .name-btn .st{font-size:13px; font-weight:700; letter-spacing:.04em}
-  .st.on{color:var(--accent)} .st.off{color:var(--muted)}
-  .big-btn{width:100%; padding:22px; font-size:28px; font-weight:800; min-height:88px; border-radius:16px}
-  .btn-in{background:var(--accent); color:#04150b}
-  .btn-out{background:var(--danger); color:#1c0505}
-  .btn-break{background:var(--accent2); color:#1c1200}
-  .btn-ghost{background:var(--panel2); border:2px solid var(--line); font-size:18px; padding:14px; min-height:60px}
-  .timer{font-size:76px; font-weight:800; text-align:center; font-variant-numeric:tabular-nums; margin:10px 0 2px}
-  .who{font-size:30px; font-weight:800; text-align:center}
-  .sub{text-align:center; color:var(--muted); font-size:16px; margin:6px 0 16px}
-  .stack{display:flex; flex-direction:column; gap:12px}
-  .job-btn{background:var(--panel2); border:2px solid var(--line); padding:18px 14px; text-align:left;
-    font-size:19px; font-weight:700; min-height:72px; width:100%}
-  .job-btn .code{color:var(--blue); font-weight:800}
-  footer{padding:20px; text-align:center}
-  footer a{color:var(--muted); font-size:14px}
+  body{margin:0; color:var(--text);
+    font-family:"Manrope",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+    letter-spacing:-.011em; -webkit-font-smoothing:antialiased;
+    background:
+      radial-gradient(900px 480px at 50% -120px, rgba(34,211,238,.14), transparent 60%),
+      radial-gradient(700px 500px at 85% 110%, rgba(46,230,168,.07), transparent 60%),
+      var(--bg);}
+  ::selection{background:var(--accent); color:#03151B}
+  header{padding:22px 16px 14px; text-align:center; border-bottom:2px solid var(--line);
+    background:linear-gradient(180deg,rgba(38,44,77,.65),rgba(5,6,13,0))}
+  header .co{font-family:"Sora",sans-serif; font-size:15px; letter-spacing:.22em;
+    text-transform:uppercase; color:var(--accent); font-weight:700}
+  header .app{font-family:"Sora",sans-serif; font-size:34px; font-weight:800; letter-spacing:-.02em; margin-top:2px}
+  main{max-width:880px; margin:0 auto; padding:18px 16px 26px}
+  main:not(.hidden){animation:rise-in .42s cubic-bezier(.22,1,.36,1) both}
+  @keyframes rise-in{from{opacity:0; transform:translateY(12px) scale(.99)} to{opacity:1; transform:translateY(0) scale(1)}}
+  @keyframes pulse-dot{0%{box-shadow:0 0 0 0 rgba(46,230,168,.55),0 0 12px rgba(46,230,168,.7)}
+    70%{box-shadow:0 0 0 9px rgba(46,230,168,0),0 0 12px rgba(46,230,168,.4)}
+    100%{box-shadow:0 0 0 0 rgba(46,230,168,0),0 0 8px rgba(46,230,168,.4)}}
+  h2.q{font-family:"Sora",sans-serif; font-size:28px; font-weight:800; letter-spacing:-.02em; margin:10px 0 16px; text-align:center}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:14px}
+  button{font-family:inherit; cursor:pointer; border:none; border-radius:18px; color:var(--text);
+    transition:transform .2s cubic-bezier(.34,1.56,.64,1), box-shadow .25s ease, filter .2s ease, background-color .2s ease, border-color .2s ease}
+  button:active{transform:scale(.97)}
+  .name-btn{background:var(--panel2); border:2px solid var(--line-strong); padding:24px 10px;
+    font-family:"Sora",sans-serif; font-size:28px; font-weight:700; min-height:108px;
+    display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+    box-shadow:var(--shadow-card)}
+  .name-btn:hover{filter:brightness(1.08); box-shadow:var(--shadow-glow)}
+  .name-btn .st{font-family:"Manrope",sans-serif; font-size:13px; font-weight:800; letter-spacing:.05em;
+    display:inline-flex; align-items:center; gap:7px}
+  .st.on{color:var(--green)} .st.off{color:var(--dim2)}
+  .st.on::before{content:""; width:9px; height:9px; border-radius:50%; background:var(--green);
+    animation:pulse-dot 2s cubic-bezier(.4,0,.6,1) infinite}
+  .st.off::before{content:""; width:9px; height:9px; border-radius:50%; background:var(--line)}
+  .big-btn{width:100%; padding:22px; font-family:"Sora",sans-serif; font-size:30px; font-weight:800;
+    min-height:92px; border-radius:18px; letter-spacing:-.01em}
+  .btn-in{background:linear-gradient(180deg,var(--green),var(--green-dark)); color:#04150B; box-shadow:var(--shadow-green)}
+  .btn-out{background:linear-gradient(180deg,#FF7285,var(--danger)); color:#2B050B;
+    box-shadow:0 0 22px rgba(255,90,110,.22), 0 12px 30px -10px rgba(255,90,110,.4)}
+  .btn-break{background:linear-gradient(180deg,#FFC44D,var(--amber)); color:#241300;
+    box-shadow:0 0 22px rgba(255,176,32,.22), 0 12px 30px -10px rgba(255,176,32,.38)}
+  .btn-ghost{background:var(--panel2); border:2px solid var(--line-strong); font-size:18px; font-weight:700; padding:14px; min-height:60px}
+  .timer{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace; font-size:84px; font-weight:800;
+    text-align:center; font-variant-numeric:tabular-nums; letter-spacing:-.02em; margin:12px 0 2px;
+    text-shadow:0 0 34px rgba(34,211,238,.25)}
+  .who{font-family:"Sora",sans-serif; font-size:34px; font-weight:800; letter-spacing:-.02em; text-align:center}
+  .sub{text-align:center; color:var(--muted); font-size:17px; font-weight:600; margin:6px 0 16px}
+  .stack{display:flex; flex-direction:column; gap:14px}
+  .job-btn{background:var(--panel2); border:2px solid var(--line-strong); padding:18px 16px; text-align:left;
+    font-size:19px; font-weight:700; min-height:76px; width:100%; border-radius:18px; box-shadow:var(--shadow-card)}
+  .job-btn:hover{filter:brightness(1.08)}
+  .job-btn .code{font-family:"JetBrains Mono",monospace; color:var(--accent); font-weight:800}
+  footer{padding:22px; text-align:center}
+  footer a{color:var(--dim2); font-size:15px; font-weight:700}
   .hidden{display:none !important}
   /* manager */
-  .tabs{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px}
+  .tabs{display:flex; flex-wrap:wrap; gap:9px; margin-bottom:16px}
   .tab{background:var(--panel2); border:2px solid var(--line); padding:12px 16px; font-size:16px; font-weight:700; border-radius:12px}
-  .tab.active{border-color:var(--blue); color:#fff; background:#243354}
-  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:12px}
-  .card h3{margin:0 0 8px; font-size:19px}
-  .kpi{display:flex; gap:12px; flex-wrap:wrap}
+  .tab.active{border-color:var(--accent); color:#fff; background:rgba(34,211,238,.16); box-shadow:var(--shadow-glow)}
+  .card{background:var(--panel); border:2px solid var(--line-strong); border-radius:22px;
+    padding:16px 18px; margin-bottom:14px; box-shadow:var(--shadow-card)}
+  .card h3{font-family:"Sora",sans-serif; margin:0 0 10px; font-size:20px; font-weight:700; letter-spacing:-.015em}
+  .kpi{display:flex; gap:14px; flex-wrap:wrap}
   .kpi .card{flex:1; min-width:150px; text-align:center}
-  .kpi .num{font-size:36px; font-weight:800}
-  .kpi .lbl{color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:.08em}
-  table{width:100%; border-collapse:collapse; font-size:15px}
-  th,td{text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top}
-  th{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em}
-  .pill{display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:800}
-  .pill.work{background:#123d27; color:var(--accent)}
-  .pill.brk{background:#3d2f07; color:var(--accent2)}
-  .pill.open{background:#3d2f07; color:var(--accent2)}
-  .brief{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
-    font-size:17px; line-height:1.5; white-space:pre-wrap}
-  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
-  .nav-btn{background:var(--panel2); border:2px solid var(--line); padding:10px 16px; font-size:16px; font-weight:700}
-  input[type=text],input[type=password]{background:var(--panel2); border:2px solid var(--line); color:var(--text);
-    border-radius:12px; padding:14px; font-size:18px; width:100%}
+  .kpi .num{font-family:"JetBrains Mono",monospace; font-size:40px; font-weight:800; color:var(--accent)}
+  .kpi .lbl{color:var(--muted); font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.09em}
+  table{width:100%; border-collapse:collapse; font-size:16px}
+  th,td{text-align:left; padding:8px; border-bottom:1px solid #2A3358; vertical-align:top}
+  th{color:var(--dim2); font-size:12px; text-transform:uppercase; letter-spacing:.07em}
+  .pill{display:inline-block; padding:3px 10px; border-radius:999px; font-size:12px; font-weight:800}
+  .pill.work{background:var(--green-soft); color:var(--green)}
+  .pill.brk{background:var(--amber-soft); color:var(--amber)}
+  .pill.open{background:var(--amber-soft); color:var(--amber)}
+  .brief{background:var(--panel2); border:2px solid var(--line); border-radius:16px; padding:14px 16px;
+    font-size:17px; line-height:1.55; white-space:pre-wrap}
+  .row{display:flex; gap:9px; align-items:center; flex-wrap:wrap}
+  .nav-btn{background:var(--panel2); border:2px solid var(--line-strong); padding:10px 16px; font-size:16px; font-weight:700; border-radius:12px}
+  input[type=text],input[type=password]{background:var(--panel2); border:2px solid var(--line-strong); color:var(--text);
+    border-radius:14px; padding:15px; font-size:19px; width:100%; font-family:inherit}
+  input:focus{box-shadow:0 0 0 4px rgba(34,211,238,.18), 0 0 18px rgba(34,211,238,.12); outline:none}
   .err{color:var(--danger); font-weight:700; min-height:22px; text-align:center}
   .muted{color:var(--muted)} .right{margin-left:auto}
-  .elapsed{font-variant-numeric:tabular-nums; font-weight:800}
+  .elapsed{font-family:"JetBrains Mono",monospace; font-variant-numeric:tabular-nums; font-weight:700}
+  @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
 </style>
 </head>
 <body>
