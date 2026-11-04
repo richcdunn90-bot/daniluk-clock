@@ -1,0 +1,103 @@
+{
+  "workers": [
+    {
+      "id": 1,
+      "name": "Rich"
+    },
+    {
+      "id": 2,
+      "name": "Jose"
+    },
+    {
+      "id": 3,
+      "name": "David"
+    },
+    {
+      "id": 4,
+      "name": "Clone Geek"
+    },
+    {
+      "id": 5,
+      "name": "Wan"
+    },
+    {
+      "id": 6,
+      "name": "Paul"
+    },
+    {
+      "id": 7,
+      "name": "Megal"
+    },
+    {
+      "id": 8,
+      "name": "Lil Jose"
+    },
+    {
+      "id": 9,
+      "name": "Painter"
+    },
+    {
+      "id": 10,
+      "name": "Jd"
+    },
+    {
+      "id": 11,
+      "name": "Phillip"
+    }
+  ],
+  "jobs": [
+    {
+      "code": "D25-RB-004",
+      "label": "Process Baron — Rebuild 30 x 300 CNC lathe"
+    },
+    {
+      "code": "D26-SC-008",
+      "label": "NOV XL — Replace input shaft bearings - NB60 spindle dr"
+    },
+    {
+      "code": "D26-RB-001",
+      "label": "Progress Rail - AL — Build 4-axis Cinturn"
+    },
+    {
+      "code": "D26-RB-002",
+      "label": "Progress Rail - AL — Build Cim-X yoke cutter"
+    },
+    {
+      "code": "D26-RB-003",
+      "label": "Mingo Aerospace — Build 40 x 40 spherical grinder"
+    },
+    {
+      "code": "D26-SJ-002",
+      "label": "Lincoln Park Boring — Replace X-axis screw"
+    },
+    {
+      "code": "D26-SJ-003",
+      "label": "Metaltek - WI — 3412 Z1-axis conversion"
+    },
+    {
+      "code": "D26-SJ-007",
+      "label": "Mingo Aerospace — Build 40\" long part head center"
+    },
+    {
+      "code": "D26-SJ-008",
+      "label": "Solar Turbine — Build 4 part load stations"
+    },
+    {
+      "code": "D26-SJ-017",
+      "label": "Metaltek - WI — Repair G&L 48\" VBM rail & ram"
+    },
+    {
+      "code": "D26-SJ-018",
+      "label": "Spuncast — Rebuild 20HC headstock"
+    },
+    {
+      "code": "D26-SJ-022",
+      "label": "Spuncast — Repair freight damage"
+    }
+  ],
+  "sessions": [],
+  "nextWorkerId": 12,
+  "nextSessionId": 1,
+  "pin": null,
+  "tokens": []
+}

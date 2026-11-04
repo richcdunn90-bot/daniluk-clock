@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Digital Job Clock — The Daniluk Corporation</title>
+<style>
+  :root{
+    --bg:#0b0e14; --panel:#151a26; --panel2:#1c2334; --line:#2b3550;
+    --text:#f2f5ff; --muted:#9fb0d0; --accent:#35d07f; --accent2:#ffb020;
+    --danger:#ff5a5a; --blue:#4da3ff;
+  }
+  *{box-sizing:border-box; -webkit-tap-highlight-color:transparent}
+  body{margin:0; background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  header{padding:18px 16px 10px; text-align:center; border-bottom:1px solid var(--line);
+    background:linear-gradient(180deg,#121828,#0b0e14)}
+  header .co{font-size:15px; letter-spacing:.14em; text-transform:uppercase; color:var(--muted); font-weight:700}
+  header .app{font-size:30px; font-weight:800; letter-spacing:.02em}
+  main{max-width:860px; margin:0 auto; padding:16px}
+  h2.q{font-size:24px; font-weight:800; margin:8px 0 14px; text-align:center}
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:12px}
+  button{font-family:inherit; cursor:pointer; border:none; border-radius:14px; color:var(--text)}
+  .name-btn{background:var(--panel2); border:2px solid var(--line); padding:22px 10px;
+    font-size:26px; font-weight:800; min-height:92px; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; gap:4px}
+  .name-btn:active{transform:scale(.98)}
+  .name-btn .st{font-size:13px; font-weight:700; letter-spacing:.04em}
+  .st.on{color:var(--accent)} .st.off{color:var(--muted)}
+  .big-btn{width:100%; padding:22px; font-size:28px; font-weight:800; min-height:88px; border-radius:16px}
+  .btn-in{background:var(--accent); color:#04150b}
+  .btn-out{background:var(--danger); color:#1c0505}
+  .btn-break{background:var(--accent2); color:#1c1200}
+  .btn-ghost{background:var(--panel2); border:2px solid var(--line); font-size:18px; padding:14px; min-height:60px}
+  .timer{font-size:76px; font-weight:800; text-align:center; font-variant-numeric:tabular-nums; margin:10px 0 2px}
+  .who{font-size:30px; font-weight:800; text-align:center}
+  .sub{text-align:center; color:var(--muted); font-size:16px; margin:6px 0 16px}
+  .stack{display:flex; flex-direction:column; gap:12px}
+  .job-btn{background:var(--panel2); border:2px solid var(--line); padding:18px 14px; text-align:left;
+    font-size:19px; font-weight:700; min-height:72px; width:100%}
+  .job-btn .code{color:var(--blue); font-weight:800}
+  footer{padding:20px; text-align:center}
+  footer a{color:var(--muted); font-size:14px}
+  .hidden{display:none !important}
+  /* manager */
+  .tabs{display:flex; flex-wrap:wrap; gap:8px; margin-bottom:14px}
+  .tab{background:var(--panel2); border:2px solid var(--line); padding:12px 16px; font-size:16px; font-weight:700; border-radius:12px}
+  .tab.active{border-color:var(--blue); color:#fff; background:#243354}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:14px; padding:14px 16px; margin-bottom:12px}
+  .card h3{margin:0 0 8px; font-size:19px}
+  .kpi{display:flex; gap:12px; flex-wrap:wrap}
+  .kpi .card{flex:1; min-width:150px; text-align:center}
+  .kpi .num{font-size:36px; font-weight:800}
+  .kpi .lbl{color:var(--muted); font-size:13px; text-transform:uppercase; letter-spacing:.08em}
+  table{width:100%; border-collapse:collapse; font-size:15px}
+  th,td{text-align:left; padding:7px 8px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{color:var(--muted); font-size:12px; text-transform:uppercase; letter-spacing:.06em}
+  .pill{display:inline-block; padding:2px 9px; border-radius:999px; font-size:12px; font-weight:800}
+  .pill.work{background:#123d27; color:var(--accent)}
+  .pill.brk{background:#3d2f07; color:var(--accent2)}
+  .pill.open{background:#3d2f07; color:var(--accent2)}
+  .brief{background:var(--panel2); border:1px solid var(--line); border-radius:12px; padding:14px 16px;
+    font-size:17px; line-height:1.5; white-space:pre-wrap}
+  .row{display:flex; gap:8px; align-items:center; flex-wrap:wrap}
+  .nav-btn{background:var(--panel2); border:2px solid var(--line); padding:10px 16px; font-size:16px; font-weight:700}
+  input[type=text],input[type=password]{background:var(--panel2); border:2px solid var(--line); color:var(--text);
+    border-radius:12px; padding:14px; font-size:18px; width:100%}
+  .err{color:var(--danger); font-weight:700; min-height:22px; text-align:center}
+  .muted{color:var(--muted)} .right{margin-left:auto}
+  .elapsed{font-variant-numeric:tabular-nums; font-weight:800}
+</style>
+</head>
+<body>
+<header>
+  <div class="co">The Daniluk Corporation</div>
+  <div class="app">Digital Job Clock</div>
+</header>
+
+<!-- ============ EMPLOYEE: name picker ============ -->
+<main id="view-picker">
+  <h2 class="q">Who's clocking in?</h2>
+  <div class="grid" id="nameGrid"></div>
+  <footer><a href="#" id="mgrLink">Manager sign-in</a></footer>
+</main>
+
+<!-- ============ EMPLOYEE: clock-in confirm ============ -->
+<main id="view-clockin" class="hidden">
+  <div class="who" id="ciName"></div>
+  <p class="sub">Ready when you are.</p>
+  <div class="stack">
+    <button class="big-btn btn-in" id="btnClockIn">Clock In</button>
+    <button class="btn-ghost" id="ciBack">← Back</button>
+  </div>
+</main>
+
+<!-- ============ EMPLOYEE: on shift ============ -->
+<main id="view-shift" class="hidden">
+  <div class="who" id="shName"></div>
+  <div class="timer" id="shTimer">0:00:00</div>
+  <p class="sub" id="shState">Working</p>
+  <div class="stack">
+    <button class="big-btn btn-break" id="btnBreak">Extra break</button>
+    <button class="big-btn btn-out" id="btnClockOut">Clock Out</button>
+  </div>
+  <p class="sub" style="margin-top:14px">Job gets picked when you clock out</p>
+</main>
+
+<!-- ============ EMPLOYEE: job picker at clock-out ============ -->
+<main id="view-jobpick" class="hidden">
+  <h2 class="q">Pick the job you worked</h2>
+  <p class="sub">Clock-out doesn't finish until you tap a job.</p>
+  <div class="stack" id="jobList"></div>
+  <div class="stack" style="margin-top:12px">
+    <button class="btn-ghost" id="jpBack">← Back</button>
+  </div>
+</main>
+
+<!-- ============ MANAGER: sign-in ============ -->
+<main id="view-mgrlogin" class="hidden">
+  <h2 class="q" id="mlTitle">Manager sign-in</h2>
+  <p class="sub" id="mlSub">Enter the manager PIN.</p>
+  <div class="stack">
+    <input type="password" id="mlPin" inputmode="numeric" placeholder="PIN" autocomplete="off">
+    <div class="err" id="mlErr"></div>
+    <button class="big-btn btn-in" id="mlGo">Sign in</button>
+    <button class="btn-ghost" id="mlBack">← Back to clock</button>
+  </div>
+</main>
+
+<!-- ============ MANAGER: dashboard ============ -->
+<main id="view-manager" class="hidden">
+  <div class="row" style="margin-bottom:10px">
+    <strong style="font-size:20px">Manager dashboard</strong>
+    <button class="nav-btn right" id="mgrOut">Sign out</button>
+  </div>
+  <div class="tabs">
+    <button class="tab active" data-tab="overview">Overview</button>
+    <button class="tab" data-tab="people">People</button>
+    <button class="tab" data-tab="timesheets">Timesheets</button>
+    <button class="tab" data-tab="daily">Daily summary</button>
+    <button class="tab" data-tab="weekly">Weekly summary</button>
+  </div>
+  <div id="tab-overview"></div>
+  <div id="tab-people" class="hidden"></div>
+  <div id="tab-timesheets" class="hidden"></div>
+  <div id="tab-daily" class="hidden"></div>
+  <div id="tab-weekly" class="hidden"></div>
+</main>
+
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+const api = async (path, opts = {}) => {
+  const r = await fetch(path, { headers: { 'Content-Type': 'application/json', ...(opts.headers || {}) }, ...opts });
+  const data = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(data.error || ('HTTP ' + r.status));
+  return data;
+};
+const mgrHeaders = () => ({ 'X-Manager-Token': sessionStorage.getItem('mgrToken') || '' });
+const mapi = (path, opts = {}) => api(path, { ...opts, headers: { ...(opts.headers || {}), ...mgrHeaders() } });
+
+const views = ['view-picker', 'view-clockin', 'view-shift', 'view-jobpick', 'view-mgrlogin', 'view-manager'];
+function show(id) { views.forEach(v => $(v).classList.toggle('hidden', v !== id)); }
+
+let workers = [], jobs = [], currentWorker = null, shiftState = null;
+
+/* ---------- time helpers (display only; server does the real math) ---------- */
+function netElapsed(clockIn, breaks, now) {
+  let ms = now - Date.parse(clockIn);
+  for (const b of breaks || []) {
+    const s = Date.parse(b.start), e = b.end ? Date.parse(b.end) : now;
+    ms -= Math.max(0, Math.min(e, now) - s);
+  }
+  return Math.max(0, ms);
+}
+function fmtTimer(ms) {
+  const s = Math.floor(ms / 1000);
+  const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+  return `${h}:${String(m).padStart(2, '0')}:${String(ss).padStart(2, '0')}`;
+}
+const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', hour: 'numeric', minute: '2-digit', hour12: true });
+const fmtTime = iso => timeFmt.format(new Date(iso));
+
+/* ---------- employee: picker ---------- */
+async function loadPicker() {
+  const d = await api('/api/employee');
+  workers = d.workers; jobs = d.jobs;
+  const g = $('nameGrid'); g.innerHTML = '';
+  for (const w of workers) {
+    const b = document.createElement('button');
+    b.className = 'name-btn';
+    b.innerHTML = `${w.name}<span class="st ${w.onShift ? 'on' : 'off'}">${w.onShift ? 'Clocked in — tap to open' : 'Off the clock'}</span>`;
+    b.onclick = () => tapName(w);
+    g.appendChild(b);
+  }
+  show('view-picker');
+}
+async function tapName(w) {
+  currentWorker = w;
+  const st = await api(`/api/worker/${w.id}/state`);
+  if (st.onShift) { shiftState = st; openShift(); }
+  else { $('ciName').textContent = w.name; show('view-clockin'); }
+}
+$('ciBack').onclick = loadPicker;
+$('btnClockIn').onclick = async () => {
+  await api('/api/clock-in', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id }) });
+  currentWorker = null;
+  loadPicker();
+};
+
+/* ---------- employee: shift screen ---------- */
+let timerInt = null;
+function openShift() {
+  $('shName').textContent = currentWorker.name;
+  show('view-shift');
+  tickShift();
+  clearInterval(timerInt);
+  timerInt = setInterval(tickShift, 500);
+}
+function tickShift() {
+  if (!shiftState) return;
+  $('shTimer').textContent = fmtTimer(netElapsed(shiftState.clockIn, shiftState.breaks, Date.now()));
+  const onBreak = shiftState.onBreak;
+  $('shState').textContent = onBreak ? 'On extra break' : 'Working';
+  $('btnBreak').textContent = onBreak ? 'End break' : 'Extra break';
+}
+$('btnBreak').onclick = async () => {
+  const r = await api('/api/break', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id, action: shiftState.onBreak ? 'end' : 'start' }) });
+  shiftState = await api(`/api/worker/${currentWorker.id}/state`);
+  tickShift();
+};
+$('btnClockOut').onclick = () => {
+  clearInterval(timerInt);
+  const list = $('jobList'); list.innerHTML = '';
+  for (const j of jobs) {
+    const b = document.createElement('button');
+    b.className = 'job-btn';
+    b.innerHTML = `<span class="code">${j.code}</span> — ${j.label}`;
+    b.onclick = async () => {
+      await api('/api/clock-out', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id, jobId: j.code }) });
+      currentWorker = null; shiftState = null;
+      loadPicker();
+    };
+    list.appendChild(b);
+  }
+  show('view-jobpick');
+};
+$('jpBack').onclick = () => { openShift(); };
+
+/* ---------- manager: auth ---------- */
+$('mgrLink').onclick = async e => {
+  e.preventDefault();
+  const st = await api('/api/manager/status');
+  $('mlTitle').textContent = st.hasPin ? 'Manager sign-in' : 'Set up manager access';
+  $('mlSub').textContent = st.hasPin ? 'Enter the manager PIN.' : 'First time — choose a manager PIN.';
+  $('mlGo').textContent = st.hasPin ? 'Sign in' : 'Set PIN & sign in';
+  $('mlPin').value = ''; $('mlErr').textContent = '';
+  show('view-mgrlogin');
+  $('mgrLink').dataset.mode = st.hasPin ? 'login' : 'setup';
+};
+$('mlBack').onclick = loadPicker;
+$('mlGo').onclick = async () => {
+  const pin = $('mlPin').value.trim();
+  try {
+    const path = $('mgrLink').dataset.mode === 'setup' ? '/api/manager/setup' : '/api/manager/login';
+    const r = await api(path, { method: 'POST', body: JSON.stringify({ pin }) });
+    sessionStorage.setItem('mgrToken', r.token);
+    openManager();
+  } catch (err) { $('mlErr').textContent = err.message; }
+};
+$('mgrOut').onclick = async () => {
+  await mapi('/api/manager/logout', { method: 'POST', body: '{}' }).catch(() => {});
+  sessionStorage.removeItem('mgrToken');
+  loadPicker();
+};
+
+/* ---------- manager: tabs ---------- */
+let curTab = 'overview', dayDate = null, weekDate = null;
+document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
+  curTab = t.dataset.tab;
+  document.querySelectorAll('.tab').forEach(x => x.classList.toggle('active', x === t));
+  ['overview', 'people', 'timesheets', 'daily', 'weekly'].forEach(k =>
+    $('tab-' + k).classList.toggle('hidden', k !== curTab));
+  refreshTab();
+});
+function openManager() { show('view-manager'); refreshTab(); }
+function refreshTab() {
+  if (curTab === 'overview') loadOverview();
+  if (curTab === 'people') loadPeople();
+  if (curTab === 'timesheets') loadTimesheets();
+  if (curTab === 'daily') loadDaily();
+  if (curTab === 'weekly') loadWeekly();
+}
+setInterval(() => { if (curTab === 'overview' && !$('view-manager').classList.contains('hidden')) loadOverview(true); }, 15000);
+
+function personRow(p) {
+  return `<tr><td><strong>${p.name}</strong></td>
+    <td class="muted">In ${fmtTime(p.clockIn)}</td>
+    <td><span class="elapsed" data-in="${p.clockIn}" data-breaks='${JSON.stringify(p.breaks || [])}'>0:00:00</span></td>
+    <td><span class="pill ${p.onBreak ? 'brk' : 'work'}">${p.onBreak ? 'On extra break' : 'Working'}</span></td></tr>`;
+}
+setInterval(() => {
+  document.querySelectorAll('.elapsed').forEach(el => {
+    el.textContent = fmtTimer(netElapsed(el.dataset.in, JSON.parse(el.dataset.breaks || '[]'), Date.now()));
+  });
+}, 1000);
+
+async function loadOverview(soft) {
+  const d = await mapi('/api/manager/overview');
+  let h = `<div class="kpi">
+    <div class="card"><div class="num">${d.onFloor}</div><div class="lbl">On the floor now</div></div>
+    <div class="card"><div class="num">${d.todayHrs}</div><div class="lbl">Hours today</div></div>
+    <div class="card"><div class="num">${d.weekHrs}</div><div class="lbl">Hours this week</div></div></div>`;
+  if (!d.floor.length && !d.noJob.length) h += `<div class="card"><h3>On the floor now</h3><p class="muted">No one is on the clock right now.</p></div>`;
+  for (const g of d.floor) {
+    h += `<div class="card"><h3>${g.code} — ${g.label}</h3><table>${g.people.map(personRow).join('')}</table></div>`;
+  }
+  if (d.noJob.length) {
+    h += `<div class="card"><h3>Clocked in — job not picked yet</h3><table>${d.noJob.map(personRow).join('')}</table></div>`;
+  }
+  $('tab-overview').innerHTML = h;
+}
+
+async function loadPeople() {
+  const d = await mapi('/api/manager/people');
+  let h = '';
+  for (const g of d.groups) {
+    h += `<div class="card"><h3>${g.code ? g.code + ' — ' + g.label : g.label}</h3><p>${g.people.map(p => p.name).join(', ')}</p></div>`;
+  }
+  h += `<div class="card"><h3>Not clocked in</h3><p>${d.notClockedIn.map(p => p.name).join(', ') || '—'}</p></div>`;
+  h += `<div class="card"><h3>Add a person</h3><div class="row">
+    <input type="text" id="newName" placeholder="Name" style="flex:1; min-width:180px">
+    <button class="nav-btn" id="addWorker">Add</button></div><div class="err" id="addErr"></div></div>`;
+  $('tab-people').innerHTML = h;
+  $('addWorker').onclick = async () => {
+    try {
+      await mapi('/api/manager/workers', { method: 'POST', body: JSON.stringify({ name: $('newName').value }) });
+      loadPeople();
+    } catch (e) { $('addErr').textContent = e.message; }
+  };
+}
+
+async function loadTimesheets() {
+  const d = await mapi('/api/manager/timesheets');
+  let h = '';
+  for (const w of d.workers) {
+    h += `<div class="card"><h3>${w.name}</h3>`;
+    if (!w.days.length) h += `<p class="muted">No time recorded.</p>`;
+    for (const day of w.days) {
+      h += `<p style="margin:10px 0 4px"><strong>${day.date}</strong> — ${day.totalHrs} hrs</p><table>`;
+      for (const s of day.sessions) {
+        h += `<tr><td>${s.jobCode || '—'} ${s.jobLabel}</td><td>${s.inTime} – ${s.outTime || '<span class="pill open">Still clocked in</span>'}</td><td>${s.netHrs} hrs</td></tr>`;
+      }
+      h += `</table>`;
+    }
+    h += `</div>`;
+  }
+  $('tab-timesheets').innerHTML = h;
+}
+
+function copyBtn(id) { return `<button class="nav-btn" onclick="copyBrief('${id}')">Copy briefing</button>`; }
+window.copyBrief = id => {
+  const el = $(id);
+  const done = () => { el.textContent = el.textContent; };
+  if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(el.textContent).catch(() => fallbackCopy(el));
+  else fallbackCopy(el);
+};
+function fallbackCopy(el) {
+  const ta = document.createElement('textarea');
+  ta.value = el.textContent; document.body.appendChild(ta); ta.select();
+  try { document.execCommand('copy'); } catch (e) {}
+  ta.remove();
+}
+
+async function loadDaily() {
+  if (!dayDate) { const o = await mapi('/api/manager/overview'); dayDate = o.today; }
+  const d = await mapi('/api/manager/summary/day?date=' + dayDate);
+  let h = `<div class="row"><button class="nav-btn" id="dPrev">← Prev day</button>
+    <strong style="font-size:18px">${d.label}</strong>
+    <button class="nav-btn" id="dNext">Next day →</button></div>`;
+  h += `<div class="kpi" style="margin-top:12px"><div class="card"><div class="num">${d.totalHrs}</div><div class="lbl">Total shop hours</div></div></div>`;
+  h += `<div class="card"><h3>Hours by person</h3>`;
+  if (!d.people.length) h += `<p class="muted">No time recorded for this day.</p>`;
+  else {
+    h += `<table><tr><th>Person</th><th>Hours</th><th>Jobs worked</th></tr>` +
+      d.people.map(p => `<tr><td><strong>${p.name}</strong>${d.stillClocked.includes(p.name) ? ' <span class="pill open">Still clocked in</span>' : ''}</td><td>${p.hrs} hrs</td><td>${p.jobs.map(j => j.code).join(', ') || '—'}</td></tr>`).join('') + `</table>`;
+  }
+  h += `</div><div class="card"><h3>Hours by job</h3>`;
+  if (!d.byJob.length) h += `<p class="muted">No time recorded for this day.</p>`;
+  else h += `<table><tr><th>Job</th><th>Hours</th></tr>` + d.byJob.map(j => `<tr><td><strong>${j.code}</strong> — ${j.label}</td><td>${j.hrs} hrs</td></tr>`).join('') + `</table>`;
+  h += `</div><div class="card"><h3>End of day briefing</h3><div class="brief" id="briefDay">${d.briefing}</div><div class="row" style="margin-top:10px">${copyBtn('briefDay')}</div></div>`;
+  $('tab-daily').innerHTML = h;
+  $('dPrev').onclick = () => { dayDate = shiftDate(dayDate, -1); loadDaily(); };
+  $('dNext').onclick = () => { dayDate = shiftDate(dayDate, 1); loadDaily(); };
+}
+
+async function loadWeekly() {
+  if (!weekDate) { const o = await mapi('/api/manager/overview'); weekDate = o.today; }
+  const d = await mapi('/api/manager/summary/week?date=' + weekDate);
+  let h = `<div class="row"><button class="nav-btn" id="wPrev">← Prev week</button>
+    <strong style="font-size:18px">Week of ${d.monday} to ${d.sunday}</strong>
+    <button class="nav-btn" id="wNext">Next week →</button></div>`;
+  h += `<div class="kpi" style="margin-top:12px"><div class="card"><div class="num">${d.totalHrs}</div><div class="lbl">Total shop hours</div></div></div>`;
+  h += `<div class="card"><h3>Hours by person</h3>`;
+  if (!d.people.length) h += `<p class="muted">No time recorded for this week.</p>`;
+  else {
+    const dayCols = d.days.map(x => x.date);
+    h += `<table><tr><th>Person</th>${d.days.map(x => `<th>${x.label.split(',')[0].slice(0, 3)}</th>`).join('')}<th>Total</th></tr>` +
+      d.people.map(p => `<tr><td><strong>${p.name}</strong>${d.stillClocked.includes(p.name) ? ' <span class="pill open">Still clocked in</span>' : ''}</td>${dayCols.map(ds => `<td>${p.byDay[ds] || '0.0'}</td>`).join('')}<td><strong>${p.totalHrs} hrs</strong></td></tr>`).join('') + `</table>`;
+  }
+  h += `</div><div class="card"><h3>Hours by job</h3>`;
+  if (!d.byJob.length) h += `<p class="muted">No time recorded for this week.</p>`;
+  else h += `<table><tr><th>Job</th><th>Hours</th></tr>` + d.byJob.map(j => `<tr><td><strong>${j.code}</strong> — ${j.label}</td><td>${j.hrs} hrs</td></tr>`).join('') + `</table>`;
+  h += `</div><div class="card"><h3>End of week briefing</h3><div class="brief" id="briefWeek">${d.briefing}</div><div class="row" style="margin-top:10px">${copyBtn('briefWeek')}</div></div>`;
+  $('tab-weekly').innerHTML = h;
+  $('wPrev').onclick = () => { weekDate = shiftDate(weekDate, -7); loadWeekly(); };
+  $('wNext').onclick = () => { weekDate = shiftDate(weekDate, 7); loadWeekly(); };
+}
+function shiftDate(ds, n) {
+  const [y, m, d] = ds.split('-').map(Number);
+  const t = new Date(Date.UTC(y, m - 1, d + n));
+  return `${t.getUTCFullYear()}-${String(t.getUTCMonth() + 1).padStart(2, '0')}-${String(t.getUTCDate()).padStart(2, '0')}`;
+}
+
+loadPicker().catch(e => { document.body.innerHTML += '<p style="color:red;text-align:center">' + e.message + '</p>'; });
+</script>
+</body>
+</html>
