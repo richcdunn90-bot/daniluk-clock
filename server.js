@@ -42,6 +42,7 @@ function seedData() {
     nextWorkerId: SEED_WORKERS.length + 1,
     nextSessionId: 1,
     pin: null,          // { salt, hash } once the manager sets it
+    notice: null,       // manager-posted message shown after clock-in / clock-out
     tokens: [],         // { token, createdAt }
   };
 }
@@ -284,6 +285,10 @@ const server = http.createServer(async (req, res) => {
       });
       return;
     }
+    if (p === '/api/notice' && req.method === 'GET') {
+      sendJson(res, 200, { text: DB.notice || '' });
+      return;
+    }
     const stateMatch = p.match(/^\/api\/worker\/(\d+)\/state$/);
     if (stateMatch && req.method === 'GET') {
       const wid = +stateMatch[1];
@@ -453,6 +458,14 @@ const server = http.createServer(async (req, res) => {
           } else notIn.push({ name: w.name, empId: w.empId || null });
         }
         sendJson(res, 200, { groups: [...byJob.values()], notClockedIn: notIn });
+        return;
+      }
+      if (p === '/api/manager/notice' && req.method === 'POST') {
+        const { text } = await readBody(req);
+        const clean = String(text || '').trim();
+        DB.notice = clean || null;
+        saveDb();
+        sendJson(res, 200, { ok: true, text: DB.notice || '' });
         return;
       }
       if (p === '/api/manager/workers' && req.method === 'POST') {

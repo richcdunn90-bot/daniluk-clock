@@ -82,6 +82,13 @@
   footer{padding:22px; text-align:center}
   footer a{color:var(--dim2); font-size:15px; font-weight:700}
   .hidden{display:none !important}
+  #quoteBox{margin:0 auto 14px; max-width:640px; text-align:center; padding:12px 16px; background:rgba(34,211,238,.07); border:1.5px solid var(--line); border-radius:16px}
+  #quoteText{font-size:19px; font-weight:600; line-height:1.35}
+  #quoteKind{display:inline-block; margin-top:7px; font-size:11.5px; font-weight:800; letter-spacing:.14em; color:var(--accent); text-transform:uppercase}
+  #noticeOverlay{position:fixed; inset:0; background:rgba(3,4,10,.8); display:flex; align-items:center; justify-content:center; z-index:60; padding:18px}
+  .notice-card{background:linear-gradient(180deg,#1E2444,var(--panel)); border:2px solid var(--accent); border-radius:22px; max-width:520px; width:100%; padding:26px 24px; text-align:center; box-shadow:var(--shadow-glow)}
+  .notice-card h3{margin:0 0 10px; font-size:22px}
+  .notice-card p{font-size:19px; line-height:1.45; white-space:pre-wrap}
   /* manager */
   .tabs{display:flex; flex-wrap:wrap; gap:9px; margin-bottom:16px}
   .tab{background:var(--panel2); border:2px solid var(--line); padding:12px 18px; font-size:16px; font-weight:700; border-radius:999px}
@@ -118,9 +125,17 @@
 <header>
   <div class="co">The Daniluk Corporation</div>
   </header>
+<div id="noticeOverlay" class="hidden">
+  <div class="notice-card">
+    <h3>Message from Mike</h3>
+    <p id="noticeText"></p>
+    <button class="big-btn btn-in" id="noticeOk">OK</button>
+  </div>
+</div>
 
 <!-- ============ EMPLOYEE: name picker ============ -->
 <main id="view-picker">
+  <div id="quoteBox"><div id="quoteText"></div><span id="quoteKind"></span></div>
   <h2 class="q">Who's clocking in?</h2>
   <div class="grid" id="nameGrid"></div>
   <footer><a href="#" id="mgrLink">Manager sign-in</a></footer>
@@ -203,6 +218,17 @@
     <input type="search" id="mgrSearch" placeholder="Search name, job, or employee ID…" style="flex:1; min-width:200px" autocomplete="off">
     <button class="nav-btn hidden" id="mgrSearchClear">Clear</button>
   </div>
+  <div class="card" style="margin-bottom:14px">
+    <h3>Message from Mike</h3>
+    <p class="muted" id="noticeCurrent">No message posted.</p>
+    <div class="row">
+      <input type="text" id="noticeInput" placeholder="Type a message for the crew\u2026" style="flex:1; min-width:200px">
+      <button class="nav-btn" id="noticePost">Post message</button>
+      <button class="nav-btn" id="noticeClear">Clear</button>
+    </div>
+    <div class="err" id="noticeErr"></div>
+    <p class="muted" style="margin-top:6px">Pops up for everyone right after they clock in or out, until you clear it.</p>
+  </div>
   <div class="tabs">
     <button class="tab active" data-tab="overview">Overview</button>
     <button class="tab" data-tab="people">People</button>
@@ -252,6 +278,81 @@ const timeFmt = new Intl.DateTimeFormat('en-US', { timeZone: 'America/Chicago', 
 const fmtTime = iso => timeFmt.format(new Date(iso));
 
 /* ---------- employee: picker ---------- */
+const QUOTES = [
+  { k: 'Safety tip', t: "Safety glasses on before the machine starts \u2014 chips don't wait." },
+  { k: 'Safety tip', t: 'No gloves near a rotating spindle. Ever.' },
+  { k: 'Safety tip', t: "If you have to ask if it's still hot, treat it like it's hot." },
+  { k: 'Safety tip', t: 'Clear chips with a brush or a hook, never your hand.' },
+  { k: 'Safety tip', t: 'Loose sleeves, loose hair, loose jewelry \u2014 the lathe collects all three.' },
+  { k: 'Safety tip', t: 'Know where the E-stop is before you need it.' },
+  { k: 'Safety tip', t: 'A dropped part is cheaper than a dropped part on your foot. Steel toes on.' },
+  { k: 'Safety tip', t: 'Never reach across a running machine.' },
+  { k: 'Safety tip', t: 'Lock it out before you open it up.' },
+  { k: 'Safety tip', t: "Tired makes mistakes. If you're worn out, slow down and double-check." },
+  { k: 'Safety tip', t: 'A clean floor is a safe floor. Housekeeping is safety.' },
+  { k: 'Safety tip', t: "Hearing protection \u2014 you'll want your hearing at retirement." },
+  { k: 'Safety tip', t: 'Never bypass a guard to save thirty seconds.' },
+  { k: 'Safety tip', t: 'If a setup feels wrong, stop. Trust the feeling, check the setup.' },
+  { k: 'Safety tip', t: 'Keep your hands where you can see them.' },
+  { k: 'Safety tip', t: 'Report a damaged tool now, not after it fails.' },
+  { k: 'Safety tip', t: 'Guide the hoist load with two hands \u2014 never ride it.' },
+  { k: 'Safety tip', t: 'Measure twice, cut once \u2014 then check the print a third time.' },
+  { k: 'Shop quote', t: 'Precision is not an accident. It is a habit.' },
+  { k: 'Shop quote', t: 'Close enough is not a dimension.' },
+  { k: 'Shop quote', t: 'Anybody can make it fast. A machinist makes it right.' },
+  { k: 'Shop quote', t: 'The best machinist in the shop checks his own work.' },
+  { k: 'Shop quote', t: "Steel doesn't care about your deadline. Take the cut it wants." },
+  { k: 'Shop quote', t: 'Every master machinist was once the new guy who asked questions. Ask.' },
+  { k: 'Shop quote', t: 'Sharp tools, true parts. Dull tools, long days.' },
+  { k: 'Shop quote', t: 'When in doubt, read the print again.' },
+  { k: 'Shop quote', t: 'Experience is just mistakes you only made once.' },
+  { k: 'Shop quote', t: "Take pride in the part \u2014 somebody's machine runs because you did it right." },
+  { k: 'Shop quote', t: 'Slow is smooth, and smooth is fast.' },
+  { k: 'Shop quote', t: 'Grinding is patience you can measure in tenths.' },
+  { k: 'Shop quote', t: 'A good setup is half the job done.' },
+  { k: 'Shop quote', t: 'Leave every machine cleaner than you found it.' },
+  { k: 'Shop quote', t: "Craftsmanship is doing it right when nobody's checking." },
+  { k: 'Shop quote', t: 'Metal remembers every shortcut.' },
+  { k: 'Shop quote', t: 'The day you stop learning this trade is the day it leaves you behind.' },
+  { k: 'Shop quote', t: 'The machine does what you told it to. Make sure you told it right.' },
+];
+function renderQuote() {
+  const q = QUOTES[Math.floor(Date.now() / 300000) % QUOTES.length];
+  $('quoteText').textContent = q.t;
+  $('quoteKind').textContent = q.k;
+}
+setInterval(renderQuote, 20000);
+
+/* ---------- manager notice: shown to the crew after clock-in / clock-out ---------- */
+async function afterPunch() {
+  try {
+    const n = await api('/api/notice');
+    if (n.text) { $('noticeText').textContent = n.text; $('noticeOverlay').classList.remove('hidden'); return; }
+  } catch (e) { /* no notice or offline \u2014 straight back to the name screen */ }
+  loadPicker();
+}
+$('noticeOk').onclick = () => { $('noticeOverlay').classList.add('hidden'); loadPicker(); };
+async function loadNoticeCard() {
+  try {
+    const n = await api('/api/notice');
+    $('noticeCurrent').textContent = n.text ? 'Posted now: \u201c' + n.text + '\u201d' : 'No message posted.';
+  } catch (e) { /* leave the card as-is */ }
+}
+$('noticePost').onclick = async () => {
+  try {
+    await mapi('/api/manager/notice', { method: 'POST', body: JSON.stringify({ text: $('noticeInput').value }) });
+    $('noticeInput').value = ''; $('noticeErr').textContent = '';
+    loadNoticeCard();
+  } catch (e) { $('noticeErr').textContent = e.message; }
+};
+$('noticeClear').onclick = async () => {
+  try {
+    await mapi('/api/manager/notice', { method: 'POST', body: JSON.stringify({ text: '' }) });
+    $('noticeErr').textContent = '';
+    loadNoticeCard();
+  } catch (e) { $('noticeErr').textContent = e.message; }
+};
+
 async function loadPicker() {
   const d = await api('/api/employee');
   workers = d.workers; jobs = d.jobs;
@@ -263,6 +364,7 @@ async function loadPicker() {
     b.onclick = () => tapName(w);
     g.appendChild(b);
   }
+  renderQuote();
   show('view-picker');
 }
 async function tapName(w) {
@@ -275,7 +377,7 @@ $('ciBack').onclick = loadPicker;
 $('btnClockIn').onclick = async () => {
   await api('/api/clock-in', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id }) });
   currentWorker = null;
-  loadPicker();
+  afterPunch();
 };
 
 /* ---------- employee: manual time entry ---------- */
@@ -305,7 +407,7 @@ $('mnSave').onclick = async () => {
       breakMinutes: $('mnBreak').value,
     }) });
     currentWorker = null;
-    loadPicker();
+    afterPunch();
   } catch (e) { $('mnErr').textContent = e.message; }
 };
 
@@ -340,7 +442,7 @@ $('btnClockOut').onclick = () => {
     b.onclick = async () => {
       await api('/api/clock-out', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id, jobId: j.code }) });
       currentWorker = null; shiftState = null;
-      loadPicker();
+      afterPunch();
     };
     list.appendChild(b);
   }
@@ -403,7 +505,7 @@ document.querySelectorAll('.tab').forEach(t => t.onclick = () => {
     $('tab-' + k).classList.toggle('hidden', k !== curTab));
   refreshTab();
 });
-function openManager() { show('view-manager'); refreshTab(); }
+function openManager() { show('view-manager'); loadNoticeCard(); refreshTab(); }
 function refreshTab() {
   if (curTab === 'overview') loadOverview();
   if (curTab === 'people') loadPeople();
