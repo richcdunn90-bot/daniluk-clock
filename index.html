@@ -210,6 +210,8 @@
   <div class="timer" id="shTimer">0:00:00</div>
   <p class="sub" id="shState">Working</p>
   <p class="sub" id="shJob" style="margin-top:-8px">Job not picked yet</p>
+  <p class="flabel" style="margin:0 0 6px">Task</p>
+  <select id="shTask" style="margin-bottom:14px"></select>
   <div class="stack">
     <button class="big-btn btn-break" id="btnBreak">Extra break</button>
     <button class="big-btn btn-switch" id="btnSwitch">Pick job</button>
@@ -239,6 +241,8 @@
     <input type="date" id="mnDate">
     <div class="flabel">Job</div>
     <select id="mnJob"></select>
+    <p class="flabel">Task (if you know it)</p>
+    <select id="mnTask"></select>
     <div class="flabel">Clock in</div>
     <input type="time" id="mnIn">
     <div class="flabel">Clock out</div>
@@ -313,7 +317,7 @@ const mapi = (path, opts = {}) => api(path, { ...opts, headers: { ...(opts.heade
 const views = ['view-picker', 'view-clockin', 'view-shift', 'view-jobpick', 'view-manual', 'view-mgrlogin', 'view-manager'];
 function show(id) { views.forEach(v => $(v).classList.toggle('hidden', v !== id)); }
 
-let workers = [], jobs = [], currentWorker = null, shiftState = null;
+let workers = [], jobs = [], tasks = [], currentWorker = null, shiftState = null;
 
 /* ---------- time helpers (display only; server does the real math) ---------- */
 function netElapsed(clockIn, breaks, now) {
@@ -410,7 +414,7 @@ $('noticeClear').onclick = async () => {
 
 async function loadPicker() {
   const d = await api('/api/employee');
-  workers = d.workers; jobs = d.jobs;
+  workers = d.workers; jobs = d.jobs; tasks = d.tasks || [];
   const g = $('nameGrid'); g.innerHTML = '';
   for (const w of workers) {
     const b = document.createElement('button');
@@ -446,6 +450,9 @@ $('ciManual').onclick = () => { manualReturn = 'picker'; openManual(); };
 $('shManual').onclick = () => { manualReturn = 'shift'; openManual(); };
 function openManual() {
   $('mnName').textContent = currentWorker.name;
+  const taskOpts = '<option value="">— Pick a task —</option>' + tasks.map(t => `<option value="${t.code}">${t.code} — ${t.name}</option>`).join('');
+  $('shTask').innerHTML = taskOpts;
+  $('mnTask').innerHTML = taskOpts;
   const sel = $('mnJob'); sel.innerHTML = '';
   for (const j of jobs) {
     const op = document.createElement('option');
@@ -467,6 +474,7 @@ $('mnSave').onclick = async () => {
   try {
     await api('/api/manual-entry', { method: 'POST', body: JSON.stringify({
       workerId: currentWorker.id, jobId: $('mnJob').value,
+      taskCode: $('mnTask').value === '' ? null : Number($('mnTask').value),
       date: $('mnDate').value, inTime: $('mnIn').value, outTime: $('mnOut').value,
       breakMinutes: $('mnBreak').value,
     }) });
@@ -489,6 +497,7 @@ function openShift() {
     ? `On job: ${shiftState.jobId} — ${shiftState.jobLabel}`
     : 'Job not picked yet';
   $('btnSwitch').textContent = shiftState.jobId ? 'Switch job' : 'Pick job';
+  $('shTask').value = shiftState.taskCode || '';
   show('view-shift');
   tickShift();
   clearInterval(timerInt);
@@ -534,6 +543,11 @@ function openJobPick(mode) {
   }
   show('view-jobpick');
 }
+$('shTask').onchange = async () => {
+  const v = $('shTask').value;
+  await api('/api/set-task', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id, taskCode: v === '' ? null : Number(v) }) });
+  shiftState.taskCode = v === '' ? null : Number(v);
+};
 $('btnSwitch').onclick = () => openJobPick('switch');
 $('btnClockOut').onclick = async () => {
   if (shiftState && shiftState.jobId) {
@@ -689,7 +703,7 @@ async function loadTimesheets() {
     for (const day of w.days) {
       h += `<p style="margin:12px 0 4px; overflow:hidden"><strong>${day.date}</strong><span class="dtot">${day.totalHrs} hrs</span></p><table>`;
       for (const s of day.sessions) {
-        h += `<tr><td>${s.jobCode || '—'} ${s.jobLabel}${s.manual ? ' <span class="pill brk">By hand</span>' : ''}</td><td>${s.inTime} – ${s.outTime || '<span class="pill open">Still clocked in</span>'}</td><td class="numcell">${s.netHrs} hrs</td></tr>`;
+        h += `<tr><td>${s.jobCode || '—'} ${s.jobLabel}${s.taskCode ? ` · <strong>${s.taskCode} ${s.taskName}</strong>` : ''}${s.manual ? ' <span class="pill brk">By hand</span>' : ''}</td><td>${s.inTime} – ${s.outTime || '<span class="pill open">Still clocked in</span>'}</td><td class="numcell">${s.netHrs} hrs</td></tr>`;
       }
       h += `</table>`;
     }

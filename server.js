@@ -151,6 +151,17 @@ function netMsInRange(s, rangeStart, rangeEnd, now) {
 }
 function workerName(id) { const w = DB.workers.find(w => w.id === id); return w ? w.name : '?'; }
 function workerEmpId(id) { const w = DB.workers.find(w => w.id === id); return w && w.empId ? w.empId : null; }
+const TASKS = [
+  [101, 'SETUP'], [102, 'INSTALL'], [103, 'DESIGN / CAD'], [104, "RECEIVING / MAT'L HDLG"],
+  [105, 'DISASSEMBLY'], [107, 'ASSEMBLY'], [108, 'ELECTRICAL SYSTEMS'], [109, 'HYDRAULIC SYSTEMS'],
+  [110, 'LUBE SYSTEMS'], [111, 'WELD'], [112, 'CLEANING'], [113, 'SAND BLASTING'],
+  [114, 'FAB'], [115, 'PAINT AND PREP'], [116, 'MACHINE WORK'], [117, 'WAY GRINDING'],
+  [118, 'SCRAPPING / FITTING'], [119, 'ALIGNMENTS'], [120, 'TEST AND RUN OFF'], [121, 'SHIPPING AND PREP'],
+  [122, 'SFTWR / PROGRAMMING'], [125, 'REWORK CUSTOMER'], [128, 'TRAINING'], [130, 'SHOP MAINTENANCE'],
+  [131, 'HPS SALES'], [132, 'WARR @ CUSTOMER SITE'], [135, 'PAID SERVICE'], [136, 'INSPECTION'],
+  [137, 'MACHINE MAINTENANCE'], [138, 'SHOP TOOLING AND FIXTURES'], [139, 'DANILUK SALES'], [140, 'PRE-FAB'],
+];
+function taskName(code) { const t = TASKS.find(t => t[0] === code); return t ? t[1] : ''; }
 function jobLabel(code) { const j = DB.jobs.find(j => j.code === code); return j ? j.label : ''; }
 
 /* Totals for one Chicago day. */
@@ -282,6 +293,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, {
         workers: DB.workers.map(w => ({ id: w.id, name: w.name, onShift: !!openSession(w.id) })),
         jobs: DB.jobs.map(j => ({ code: j.code, label: j.label })),
+        tasks: TASKS.map(([code, name]) => ({ code, name })),
       });
       return;
     }
@@ -302,6 +314,7 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, {
         onShift: true, clockIn: s.clockIn,
         jobId: s.jobId || null, jobLabel: s.jobId ? jobLabel(s.jobId) : null,
+        taskCode: s.taskCode || null, taskName: s.taskCode ? taskName(s.taskCode) : null,
         shiftStart, shiftNetMs,
         onBreak: sessionOnBreak(s),
         breaks: s.breaks.map(b => ({ start: b.start, end: b.end })),
@@ -315,7 +328,7 @@ const server = http.createServer(async (req, res) => {
       let s = openSession(workerId);
       if (!s) {
         const nowIsoIn = new Date().toISOString();
-        s = { id: DB.nextSessionId++, workerId, jobId: null, clockIn: nowIsoIn, shiftStart: nowIsoIn, clockOut: null, breaks: [] };
+        s = { id: DB.nextSessionId++, workerId, jobId: null, taskCode: null, clockIn: nowIsoIn, shiftStart: nowIsoIn, clockOut: null, breaks: [] };
         DB.sessions.push(s);
         saveDb();
       }
@@ -336,6 +349,19 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, { ok: true, onBreak: sessionOnBreak(s) });
       return;
     }
+    if (p === '/api/set-task' && req.method === 'POST') {
+      const { workerId, taskCode } = await readBody(req);
+      const s = openSession(workerId);
+      if (!s) { sendJson(res, 400, { error: 'Not on shift' }); return; }
+      if (taskCode === null || taskCode === undefined || taskCode === '') {
+        s.taskCode = null;
+      } else if (TASKS.some(t => t[0] === Number(taskCode))) {
+        s.taskCode = Number(taskCode);
+      } else { sendJson(res, 400, { error: 'Pick a task from the list' }); return; }
+      saveDb();
+      sendJson(res, 200, { ok: true, taskCode: s.taskCode });
+      return;
+    }
     if (p === '/api/switch-job' && req.method === 'POST') {
       const { workerId, jobId } = await readBody(req);
       const s = openSession(workerId);
@@ -354,7 +380,7 @@ const server = http.createServer(async (req, res) => {
       const open = s.breaks.find(b => !b.end);
       if (open) open.end = nowIso;
       s.clockOut = nowIso;
-      const ns = { id: DB.nextSessionId++, workerId, jobId, clockIn: nowIso, shiftStart: s.shiftStart || s.clockIn, clockOut: null, breaks: [] };
+      const ns = { id: DB.nextSessionId++, workerId, jobId, taskCode: null, clockIn: nowIso, shiftStart: s.shiftStart || s.clockIn, clockOut: null, breaks: [] };
       DB.sessions.push(ns);
       saveDb();
       sendJson(res, 200, { ok: true, split: true });
@@ -381,11 +407,16 @@ const server = http.createServer(async (req, res) => {
 
 
     if (p === '/api/manual-entry' && req.method === 'POST') {
-      const { workerId, jobId, date, inTime, outTime, breakMinutes } = await readBody(req);
+      const { workerId, jobId, taskCode, date, inTime, outTime, breakMinutes } = await readBody(req);
       const w = DB.workers.find(w => w.id === workerId);
       if (!w) { sendJson(res, 400, { error: 'Unknown worker' }); return; }
       if (!jobId || !DB.jobs.some(j => j.code === jobId)) {
         sendJson(res, 400, { error: 'Pick the job you worked' });
+        return;
+      }
+      const taskNum = (taskCode === null || taskCode === undefined || taskCode === '') ? null : Number(taskCode);
+      if (taskNum !== null && !TASKS.some(t => t[0] === taskNum)) {
+        sendJson(res, 400, { error: 'Pick a task from the list' });
         return;
       }
       if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date || '')) ||
@@ -414,6 +445,7 @@ const server = http.createServer(async (req, res) => {
         id: DB.nextSessionId++, workerId, jobId,
         clockIn: inIso, clockOut: new Date(outMs).toISOString(),
         breaks: brkMin > 0 ? [{ start: inIso, end: new Date(inMs + brkMin * 60000).toISOString() }] : [],
+        taskCode: taskNum,
         manual: true,
       };
       DB.sessions.push(sess);
@@ -524,6 +556,7 @@ const server = http.createServer(async (req, res) => {
             const net = netMsInRange(s, start, end, now);
             days.get(ds).sessions.push({
               jobCode: s.jobId, jobLabel: s.jobId ? jobLabel(s.jobId) : 'Job not picked yet',
+              taskCode: s.taskCode || null, taskName: s.taskCode ? taskName(s.taskCode) : null,
               inTime: prettyTime(s.clockIn), outTime: s.clockOut ? prettyTime(s.clockOut) : null,
               open: !s.clockOut, manual: !!s.manual, netHrs: fmtHrs(net),
             });
