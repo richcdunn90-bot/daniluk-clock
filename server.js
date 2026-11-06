@@ -149,6 +149,7 @@ function netMsInRange(s, rangeStart, rangeEnd, now) {
   return Math.max(0, net);
 }
 function workerName(id) { const w = DB.workers.find(w => w.id === id); return w ? w.name : '?'; }
+function workerEmpId(id) { const w = DB.workers.find(w => w.id === id); return w && w.empId ? w.empId : null; }
 function jobLabel(code) { const j = DB.jobs.find(j => j.code === code); return j ? j.label : ''; }
 
 /* Totals for one Chicago day. */
@@ -422,7 +423,7 @@ const server = http.createServer(async (req, res) => {
       if (p === '/api/manager/overview' && req.method === 'GET') {
         const byJob = new Map(); const noJob = [];
         for (const s of DB.sessions.filter(s => !s.clockOut)) {
-          const person = { workerId: s.workerId, name: workerName(s.workerId), clockIn: s.clockIn, onBreak: sessionOnBreak(s), breaks: s.breaks };
+          const person = { workerId: s.workerId, name: workerName(s.workerId), empId: workerEmpId(s.workerId), clockIn: s.clockIn, onBreak: sessionOnBreak(s), breaks: s.breaks };
           if (s.jobId) {
             if (!byJob.has(s.jobId)) byJob.set(s.jobId, { code: s.jobId, label: jobLabel(s.jobId), people: [] });
             byJob.get(s.jobId).people.push(person);
@@ -445,20 +446,23 @@ const server = http.createServer(async (req, res) => {
           const s = openSession(w.id);
           if (s && s.jobId) {
             if (!byJob.has(s.jobId)) byJob.set(s.jobId, { code: s.jobId, label: jobLabel(s.jobId), people: [] });
-            byJob.get(s.jobId).people.push({ name: w.name });
+            byJob.get(s.jobId).people.push({ name: w.name, empId: w.empId || null });
           } else if (s) {
             if (!byJob.has('__nojob')) byJob.set('__nojob', { code: null, label: 'Clocked in — job not picked yet', people: [] });
-            byJob.get('__nojob').people.push({ name: w.name });
-          } else notIn.push({ name: w.name });
+            byJob.get('__nojob').people.push({ name: w.name, empId: w.empId || null });
+          } else notIn.push({ name: w.name, empId: w.empId || null });
         }
         sendJson(res, 200, { groups: [...byJob.values()], notClockedIn: notIn });
         return;
       }
       if (p === '/api/manager/workers' && req.method === 'POST') {
-        const { name } = await readBody(req);
+        const { name, empId } = await readBody(req);
         const clean = String(name || '').trim();
         if (!clean) { sendJson(res, 400, { error: 'Name required' }); return; }
+        const cleanId = String(empId || '').trim();
+        if (cleanId && DB.workers.some(w => String(w.empId || '') === cleanId)) { sendJson(res, 400, { error: 'That employee ID is already used' }); return; }
         const w = { id: DB.nextWorkerId++, name: clean };
+        if (cleanId) w.empId = cleanId;
         DB.workers.push(w);
         saveDb();
         sendJson(res, 200, { ok: true, worker: w });
@@ -480,7 +484,7 @@ const server = http.createServer(async (req, res) => {
             days.get(ds).totalMs += net;
           }
           return {
-            name: w.name,
+            name: w.name, empId: w.empId || null,
             days: [...days.values()].sort((a, b) => b.date.localeCompare(a.date))
               .map(d => ({ date: d.date, totalHrs: fmtHrs(d.totalMs), sessions: d.sessions })),
           };
