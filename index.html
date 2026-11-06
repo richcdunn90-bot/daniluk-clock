@@ -86,6 +86,9 @@
     box-shadow:inset 0 1px 0 rgba(255,255,255,.5), inset 0 -10px 22px rgba(90,50,0,.16), 0 0 24px rgba(255,176,32,.24), 0 14px 32px -10px rgba(255,176,32,.42)}
   .btn-break:hover{filter:brightness(1.06)}
   .btn-ghost{background:linear-gradient(180deg,#29325C,var(--panel2)); border:1.5px solid var(--line-strong); font-size:18px; font-weight:700; padding:14px; min-height:60px}
+  .btn-switch{background:linear-gradient(180deg,#4A5CA8,#2E3A6E); color:#fff; border:1.5px solid rgba(147,161,204,.8);
+    box-shadow:inset 0 1px 0 rgba(255,255,255,.35), inset 0 -10px 22px rgba(0,10,50,.25), 0 14px 32px -12px rgba(60,80,180,.55)}
+  .btn-switch:hover{filter:brightness(1.1)}
   .btn-ghost:hover{filter:brightness(1.12)}
   .timer{font-family:"JetBrains Mono",ui-monospace,Menlo,monospace; font-size:92px; font-weight:800;
     text-align:center; font-variant-numeric:tabular-nums; letter-spacing:-.02em; margin:14px 0 2px;
@@ -198,17 +201,20 @@
   <div class="who" id="shName"></div>
   <div class="timer" id="shTimer">0:00:00</div>
   <p class="sub" id="shState">Working</p>
+  <p class="sub" id="shJob" style="margin-top:-8px">Job not picked yet</p>
   <div class="stack">
     <button class="big-btn btn-break" id="btnBreak">Extra break</button>
+    <button class="big-btn btn-switch" id="btnSwitch">Pick job</button>
     <button class="big-btn btn-out" id="btnClockOut">Clock Out</button>
+    <button class="btn-ghost" id="shManual">Add time by hand</button>
   </div>
-  <p class="sub" style="margin-top:14px">Job gets picked when you clock out</p>
+  <p class="sub" style="margin-top:14px">Pick a job any time — switch whenever the work changes. Time splits at the switch.</p>
 </main>
 
 <!-- ============ EMPLOYEE: job picker at clock-out ============ -->
 <main id="view-jobpick" class="hidden">
-  <h2 class="q">Pick the job you worked</h2>
-  <p class="sub">Clock-out doesn't finish until you tap a job.</p>
+  <h2 class="q" id="jpTitle">Pick the job you worked</h2>
+  <p class="sub" id="jpSub">Clock-out doesn't finish until you tap a job.</p>
   <div class="stack" id="jobList"></div>
   <div class="stack" style="margin-top:12px">
     <button class="btn-ghost" id="jpBack">← Back</button>
@@ -427,7 +433,10 @@ function chicagoToday() {
   const o = {}; for (const p of parts) o[p.type] = p.value;
   return `${o.year}-${o.month}-${o.day}`;
 }
-$('ciManual').onclick = () => {
+let manualReturn = 'picker';
+$('ciManual').onclick = () => { manualReturn = 'picker'; openManual(); };
+$('shManual').onclick = () => { manualReturn = 'shift'; openManual(); };
+function openManual() {
   $('mnName').textContent = currentWorker.name;
   const sel = $('mnJob'); sel.innerHTML = '';
   for (const j of jobs) {
@@ -438,8 +447,14 @@ $('ciManual').onclick = () => {
   $('mnDate').value = chicagoToday();
   $('mnIn').value = ''; $('mnOut').value = ''; $('mnBreak').value = '0'; $('mnErr').textContent = '';
   show('view-manual');
+}
+$('mnBack').onclick = async () => {
+  if (manualReturn === 'shift' && currentWorker) {
+    shiftState = await api(`/api/worker/${currentWorker.id}/state`);
+    if (shiftState.onShift) { openShift(); return; }
+  }
+  $('ciName').textContent = currentWorker.name; show('view-clockin');
 };
-$('mnBack').onclick = () => { $('ciName').textContent = currentWorker.name; show('view-clockin'); };
 $('mnSave').onclick = async () => {
   try {
     await api('/api/manual-entry', { method: 'POST', body: JSON.stringify({
@@ -447,6 +462,10 @@ $('mnSave').onclick = async () => {
       date: $('mnDate').value, inTime: $('mnIn').value, outTime: $('mnOut').value,
       breakMinutes: $('mnBreak').value,
     }) });
+    if (manualReturn === 'shift' && currentWorker) {
+      shiftState = await api(`/api/worker/${currentWorker.id}/state`);
+      if (shiftState.onShift) { openShift(); return; }
+    }
     currentWorker = null;
     afterPunch();
   } catch (e) { $('mnErr').textContent = e.message; }
@@ -454,16 +473,22 @@ $('mnSave').onclick = async () => {
 
 /* ---------- employee: shift screen ---------- */
 let timerInt = null;
+let shiftBase = null;
 function openShift() {
   $('shName').textContent = currentWorker.name;
+  shiftBase = { ms: shiftState.shiftNetMs || 0, at: Date.now(), onBreak: !!shiftState.onBreak };
+  $('shJob').textContent = shiftState.jobId
+    ? `On job: ${shiftState.jobId} — ${shiftState.jobLabel}`
+    : 'Job not picked yet';
+  $('btnSwitch').textContent = shiftState.jobId ? 'Switch job' : 'Pick job';
   show('view-shift');
   tickShift();
   clearInterval(timerInt);
   timerInt = setInterval(tickShift, 500);
 }
 function tickShift() {
-  if (!shiftState) return;
-  $('shTimer').textContent = fmtTimer(netElapsed(shiftState.clockIn, shiftState.breaks, Date.now()));
+  if (!shiftState || !shiftBase) return;
+  $('shTimer').textContent = fmtTimer(shiftBase.onBreak ? shiftBase.ms : shiftBase.ms + (Date.now() - shiftBase.at));
   const onBreak = shiftState.onBreak;
   $('shState').textContent = onBreak ? 'On extra break' : 'Working';
   $('btnBreak').textContent = onBreak ? 'End break' : 'Extra break';
@@ -473,21 +498,44 @@ $('btnBreak').onclick = async () => {
   shiftState = await api(`/api/worker/${currentWorker.id}/state`);
   tickShift();
 };
-$('btnClockOut').onclick = () => {
+let jobPickMode = 'out';
+function openJobPick(mode) {
+  jobPickMode = mode;
   clearInterval(timerInt);
+  $('jpTitle').textContent = mode === 'switch' ? 'What job are you on now?' : 'Pick the job you worked';
+  $('jpSub').textContent = mode === 'switch'
+    ? 'Time up to now stays on the job you were on. The new job starts when you tap it.'
+    : "Clock-out doesn't finish until you tap a job.";
   const list = $('jobList'); list.innerHTML = '';
   for (const j of jobs) {
     const b = document.createElement('button');
     b.className = 'job-btn';
     b.innerHTML = `<span class="code">${j.code}</span> — ${j.label}`;
     b.onclick = async () => {
-      await api('/api/clock-out', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id, jobId: j.code }) });
-      currentWorker = null; shiftState = null;
-      afterPunch();
+      if (jobPickMode === 'switch') {
+        await api('/api/switch-job', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id, jobId: j.code }) });
+        shiftState = await api(`/api/worker/${currentWorker.id}/state`);
+        openShift();
+      } else {
+        await api('/api/clock-out', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id, jobId: j.code }) });
+        currentWorker = null; shiftState = null;
+        afterPunch();
+      }
     };
     list.appendChild(b);
   }
   show('view-jobpick');
+}
+$('btnSwitch').onclick = () => openJobPick('switch');
+$('btnClockOut').onclick = async () => {
+  if (shiftState && shiftState.jobId) {
+    clearInterval(timerInt);
+    await api('/api/clock-out', { method: 'POST', body: JSON.stringify({ workerId: currentWorker.id }) });
+    currentWorker = null; shiftState = null;
+    afterPunch();
+  } else {
+    openJobPick('out');
+  }
 };
 $('jpBack').onclick = () => { openShift(); };
 

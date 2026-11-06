@@ -294,8 +294,15 @@ const server = http.createServer(async (req, res) => {
       const wid = +stateMatch[1];
       const s = openSession(wid);
       if (!s) { sendJson(res, 200, { onShift: false }); return; }
+      const shiftStart = s.shiftStart || s.clockIn;
+      const chain = DB.sessions.filter(x => x.workerId === wid && (x.shiftStart || x.clockIn) === shiftStart);
+      const nowMs = Date.now();
+      let shiftNetMs = 0;
+      for (const seg of chain) shiftNetMs += netMsInRange(seg, Date.parse(shiftStart), nowMs, nowMs);
       sendJson(res, 200, {
         onShift: true, clockIn: s.clockIn,
+        jobId: s.jobId || null, jobLabel: s.jobId ? jobLabel(s.jobId) : null,
+        shiftStart, shiftNetMs,
         onBreak: sessionOnBreak(s),
         breaks: s.breaks.map(b => ({ start: b.start, end: b.end })),
       });
@@ -307,7 +314,8 @@ const server = http.createServer(async (req, res) => {
       if (!w) { sendJson(res, 400, { error: 'Unknown worker' }); return; }
       let s = openSession(workerId);
       if (!s) {
-        s = { id: DB.nextSessionId++, workerId, jobId: null, clockIn: new Date().toISOString(), clockOut: null, breaks: [] };
+        const nowIsoIn = new Date().toISOString();
+        s = { id: DB.nextSessionId++, workerId, jobId: null, clockIn: nowIsoIn, shiftStart: nowIsoIn, clockOut: null, breaks: [] };
         DB.sessions.push(s);
         saveDb();
       }
@@ -328,18 +336,43 @@ const server = http.createServer(async (req, res) => {
       sendJson(res, 200, { ok: true, onBreak: sessionOnBreak(s) });
       return;
     }
-    if (p === '/api/clock-out' && req.method === 'POST') {
+    if (p === '/api/switch-job' && req.method === 'POST') {
       const { workerId, jobId } = await readBody(req);
       const s = openSession(workerId);
       if (!s) { sendJson(res, 400, { error: 'Not on shift' }); return; }
       if (!jobId || !DB.jobs.some(j => j.code === jobId)) {
+        sendJson(res, 400, { error: 'Pick a job' });
+        return;
+      }
+      if (!s.jobId || s.jobId === jobId) {
+        s.jobId = jobId;
+        saveDb();
+        sendJson(res, 200, { ok: true, split: false });
+        return;
+      }
+      const nowIso = new Date().toISOString();
+      const open = s.breaks.find(b => !b.end);
+      if (open) open.end = nowIso;
+      s.clockOut = nowIso;
+      const ns = { id: DB.nextSessionId++, workerId, jobId, clockIn: nowIso, shiftStart: s.shiftStart || s.clockIn, clockOut: null, breaks: [] };
+      DB.sessions.push(ns);
+      saveDb();
+      sendJson(res, 200, { ok: true, split: true });
+      return;
+    }
+    if (p === '/api/clock-out' && req.method === 'POST') {
+      const { workerId, jobId } = await readBody(req);
+      const s = openSession(workerId);
+      if (!s) { sendJson(res, 400, { error: 'Not on shift' }); return; }
+      const finalJob = jobId || s.jobId;
+      if (!finalJob || !DB.jobs.some(j => j.code === finalJob)) {
         sendJson(res, 400, { error: 'Pick a job to clock out' });
         return;
       }
       const nowIso = new Date().toISOString();
       const open = s.breaks.find(b => !b.end);
       if (open) open.end = nowIso;
-      s.jobId = jobId;
+      s.jobId = finalJob;
       s.clockOut = nowIso;
       saveDb();
       sendJson(res, 200, { ok: true });
