@@ -162,6 +162,14 @@
   .err{color:var(--danger); font-weight:700; min-height:22px; text-align:center}
   .muted{color:var(--muted)} .right{margin-left:auto}
   .elapsed{font-family:"JetBrains Mono",monospace; font-variant-numeric:tabular-nums; font-weight:700}
+  td.numcell,th.numcell{text-align:right; font-family:"JetBrains Mono",monospace; font-variant-numeric:tabular-nums; white-space:nowrap}
+  td.numcell{font-weight:700}
+  .kpi{align-items:stretch}
+  .kpi .card{display:flex; flex-direction:column; justify-content:center; gap:2px}
+  .kpi .num{line-height:1.05}
+  .kpi > .card:only-child{max-width:360px; width:100%; margin-left:auto; margin-right:auto}
+  .grid{grid-auto-rows:1fr}
+  .dtot{float:right; font-family:"JetBrains Mono",monospace; font-variant-numeric:tabular-nums}
   @media (prefers-reduced-motion: reduce){ *{animation:none !important; transition:none !important} }
 </style>
 </head>
@@ -265,17 +273,6 @@
     <input type="search" id="mgrSearch" placeholder="Search name, job, or employee ID…" style="flex:1; min-width:200px" autocomplete="off">
     <button class="nav-btn hidden" id="mgrSearchClear">Clear</button>
   </div>
-  <div class="card" style="margin-bottom:14px">
-    <h3>Message from Mike</h3>
-    <p class="muted" id="noticeCurrent">No message posted.</p>
-    <div class="row">
-      <input type="text" id="noticeInput" placeholder="Type a message for the crew\u2026" style="flex:1; min-width:200px">
-      <button class="nav-btn" id="noticePost">Post message</button>
-      <button class="nav-btn" id="noticeClear">Clear</button>
-    </div>
-    <div class="err" id="noticeErr"></div>
-    <p class="muted" style="margin-top:6px">Pops up for everyone right after they clock in or out, until you clear it.</p>
-  </div>
   <div class="tabs">
     <button class="tab active" data-tab="overview">Overview</button>
     <button class="tab" data-tab="people">People</button>
@@ -288,6 +285,17 @@
   <div id="tab-timesheets" class="hidden"></div>
   <div id="tab-daily" class="hidden"></div>
   <div id="tab-weekly" class="hidden"></div>
+  <div class="card" style="margin-bottom:14px">
+    <h3>Message from Mike</h3>
+    <p class="muted" id="noticeCurrent">No message posted.</p>
+    <div class="row">
+      <input type="text" id="noticeInput" placeholder="Type a message for the crew\u2026" style="flex:1; min-width:200px">
+      <button class="nav-btn" id="noticePost">Post message</button>
+      <button class="nav-btn" id="noticeClear">Clear</button>
+    </div>
+    <div class="err" id="noticeErr"></div>
+    <p class="muted" style="margin-top:6px">Pops up for everyone right after they clock in or out, until you clear it.</p>
+  </div>
 </main>
 
 <script>
@@ -679,9 +687,9 @@ async function loadTimesheets() {
     h += `<div class="card"><h3>${w.name}${w.empId ? ` <span class="muted">· ID ${w.empId}</span>` : ''}</h3>`;
     if (!w.days.length) h += `<p class="muted">No time recorded.</p>`;
     for (const day of w.days) {
-      h += `<p style="margin:10px 0 4px"><strong>${day.date}</strong> — ${day.totalHrs} hrs</p><table>`;
+      h += `<p style="margin:12px 0 4px; overflow:hidden"><strong>${day.date}</strong><span class="dtot">${day.totalHrs} hrs</span></p><table>`;
       for (const s of day.sessions) {
-        h += `<tr><td>${s.jobCode || '—'} ${s.jobLabel}${s.manual ? ' <span class="pill brk">By hand</span>' : ''}</td><td>${s.inTime} – ${s.outTime || '<span class="pill open">Still clocked in</span>'}</td><td>${s.netHrs} hrs</td></tr>`;
+        h += `<tr><td>${s.jobCode || '—'} ${s.jobLabel}${s.manual ? ' <span class="pill brk">By hand</span>' : ''}</td><td>${s.inTime} – ${s.outTime || '<span class="pill open">Still clocked in</span>'}</td><td class="numcell">${s.netHrs} hrs</td></tr>`;
       }
       h += `</table>`;
     }
@@ -737,8 +745,8 @@ async function loadWeekly() {
   if (!d.people.length) h += `<p class="muted">No time recorded for this week.</p>`;
   else {
     const dayCols = d.days.map(x => x.date);
-    h += `<table><tr><th>Person</th>${d.days.map(x => `<th>${x.label.split(',')[0].slice(0, 3)}</th>`).join('')}<th>Total</th></tr>` +
-      d.people.map(p => `<tr><td><strong>${p.name}</strong>${d.stillClocked.includes(p.name) ? ' <span class="pill open">Still clocked in</span>' : ''}</td>${dayCols.map(ds => `<td>${p.byDay[ds] || '0.0'}</td>`).join('')}<td><strong>${p.totalHrs} hrs</strong></td></tr>`).join('') + `</table>`;
+    h += `<table><tr><th>Person</th>${d.days.map(x => `<th class="numcell">${x.label.split(',')[0].slice(0, 3)}</th>`).join('')}<th class="numcell">Total</th></tr>` +
+      d.people.map(p => `<tr><td><strong>${p.name}</strong>${d.stillClocked.includes(p.name) ? ' <span class="pill open">Still clocked in</span>' : ''}</td>${dayCols.map(ds => `<td class="numcell">${p.byDay[ds] || '0.0'}</td>`).join('')}<td class="numcell"><strong>${p.totalHrs} hrs</strong></td></tr>`).join('') + `</table>`;
   }
   h += `</div><div class="card"><h3>Hours by job</h3>`;
   if (!d.byJob.length) h += `<p class="muted">No time recorded for this week.</p>`;
